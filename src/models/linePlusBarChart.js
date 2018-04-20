@@ -35,6 +35,7 @@ nv.models.linePlusBarChart = function() {
         , focusHeight = 50
         , extent
         , brushExtent = null
+        , useInteractiveGuideline = false
         , x
         , x2
         , y1
@@ -244,6 +245,21 @@ nv.models.linePlusBarChart = function() {
             }
 
             wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+
+            //Set up interactive layer
+            if (useInteractiveGuideline) {
+                interactiveLayer
+                    .width(availableWidth)
+                    .height(availableHeight)
+                    .margin({left:margin.left, top:margin.top})
+                    .svgContainer(container)
+                    .xScale(x);
+                wrap.select(".nv-interactive").call(interactiveLayer);
+            }
+
+
+
 
             //============================================================
             // Context chart (focus chart) components
@@ -659,6 +675,13 @@ nv.models.linePlusBarChart = function() {
             y2Axis.orient('right');
             y3Axis.orient('left');
             y4Axis.orient('right');
+        }},
+        useInteractiveGuideline: {get: function(){return useInteractiveGuideline;}, set: function(_){
+            useInteractiveGuideline = _;
+            if (useInteractiveGuideline) {
+                lines.interactive(false);
+                lines.useVoronoi(false);
+            }
         }}
     });
 
