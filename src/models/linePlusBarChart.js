@@ -18,6 +18,7 @@ nv.models.linePlusBarChart = function() {
         , y3Axis = nv.models.axis()
         , y4Axis = nv.models.axis()
         , legend = nv.models.legend()
+        , interactiveLayer = nv.interactiveGuideline()
         , brush = d3.svg.brush()
         , tooltip = nv.models.tooltip()
         ;
@@ -66,6 +67,12 @@ nv.models.linePlusBarChart = function() {
     y4Axis.orient('right');
 
     tooltip.headerEnabled(true).headerFormatter(function(d, i) {
+        return xAxis.tickFormat()(d, i);
+    });
+
+    interactiveLayer.tooltip.valueFormatter(function(d, i) {
+        return yAxis.tickFormat()(d, i);
+    }).headerFormatter(function(d, i) {
         return xAxis.tickFormat()(d, i);
     });
 
@@ -253,7 +260,7 @@ nv.models.linePlusBarChart = function() {
             if (useInteractiveGuideline) {
                 interactiveLayer
                     .width(availableWidth)
-                    .height(availableHeight)
+                    .height(availableHeight1)
                     .margin({left:margin.left, top:margin.top})
                     .svgContainer(container)
                     .xScale(x);
@@ -378,6 +385,73 @@ nv.models.linePlusBarChart = function() {
                 dispatch.stateChange(state);
                 chart.update();
             });
+
+
+            interactiveLayer.dispatch.on('elementMousemove', function(e) {
+                lines.clearHighlights();
+                var singlePoint, pointIndex, pointXLocation, allData = [];
+                data
+                    .filter(function(series, i) {
+                        series.seriesIndex = i;
+                        return !series.disabled && !series.disableTooltip;
+                    })
+                    .forEach(function(series,i) {
+                        var extent = focus.brush.extent() !== null ? (focus.brush.empty() ? focus.xScale().domain() : focus.brush.extent()) : x.domain();
+                        var currentValues = series.values.filter(function(d,i) {
+                            // Checks if the x point is between the extents, handling case where extent[0] is greater than extent[1]
+                            // (e.g. x domain is manually set to reverse the x-axis)
+                            if(extent[0] <= extent[1]) {
+                                return lines.x()(d,i) >= extent[0] && lines.x()(d,i) <= extent[1];
+                            } else {
+                                return lines.x()(d,i) >= extent[1] && lines.x()(d,i) <= extent[0];
+                            }
+                        });
+
+                        if (currentValues.length > 0) {
+                            pointIndex = nv.interactiveBisect(currentValues, e.pointXValue, lines.x());
+                            var point = currentValues[pointIndex];
+                            var pointYValue = chart.y()(point, pointIndex);
+                            if (pointYValue !== null) {
+                                lines.highlightPoint(i, series.values.indexOf(point), true);
+                            }
+                            if (point === undefined) return;
+                            if (singlePoint === undefined) singlePoint = point;
+                            if (pointXLocation === undefined) pointXLocation = chart.xScale()(chart.x()(point,pointIndex));
+                            allData.push({
+                                key: series.key,
+                                value: pointYValue,
+                                color: color(series,series.seriesIndex),
+                                data: point
+                            });
+                        }
+                    });
+                //Highlight the tooltip entry based on which point the mouse is closest to.
+                if (allData.length > 2) {
+                    var yValue = chart.yScale().invert(e.mouseY);
+                    var domainExtent = Math.abs(chart.yScale().domain()[0] - chart.yScale().domain()[1]);
+                    var threshold = 0.03 * domainExtent;
+                    var indexToHighlight = nv.nearestValueIndex(allData.map(function(d){return d.value;}),yValue,threshold);
+                    if (indexToHighlight !== null)
+                        allData[indexToHighlight].highlight = true;
+                }
+
+                var defaultValueFormatter = function(d,i) {
+                    return d == null ? "N/A" : yAxis.tickFormat()(d);
+                };
+
+                if (typeof pointIndex !== 'undefined') {
+                    interactiveLayer.tooltip
+                        .valueFormatter(interactiveLayer.tooltip.valueFormatter() || defaultValueFormatter)
+                        .data({
+                            value: chart.x()( singlePoint,pointIndex ),
+                            index: pointIndex,
+                            series: allData
+                        })();
+
+                    interactiveLayer.renderGuideLine(pointXLocation);
+                }
+            });
+
 
             // Update chart from a state object passed to event handler
             dispatch.on('changeState', function(e) {
@@ -605,6 +679,7 @@ nv.models.linePlusBarChart = function() {
     chart.y2Axis = y2Axis;
     chart.y3Axis = y3Axis;
     chart.y4Axis = y4Axis;
+    chart.interactiveLayer = interactiveLayer;
     chart.tooltip = tooltip;
 
     chart.options = nv.utils.optionsFunc.bind(chart);
