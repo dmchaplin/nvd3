@@ -208,6 +208,7 @@ nv.models.linePlusBarChart = function() {
             focusEnter.append('g').attr('class', 'nv-y2 nv-axis');
             focusEnter.append('g').attr('class', 'nv-barsWrap');
             focusEnter.append('g').attr('class', 'nv-linesWrap');
+            focusEnter.append('g').attr('class', 'nv-interactive');
 
             // context chart is where you can focus in
             var contextEnter = gEnter.append('g').attr('class', 'nv-context');
