@@ -71,7 +71,7 @@ nv.models.linePlusBarChart = function() {
     });
 
     interactiveLayer.tooltip.valueFormatter(function(d, i) {
-        return yAxis.tickFormat()(d, i);
+        return y1Axis.tickFormat()(d, i);
     }).headerFormatter(function(d, i) {
         return xAxis.tickFormat()(d, i);
     });
