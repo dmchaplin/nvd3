@@ -761,7 +761,13 @@ nv.models.linePlusBarChart = function() {
             useInteractiveGuideline = _;
             if (useInteractiveGuideline) {
                 lines.interactive(false);
+                lines1.interactive(false);
+                bars.interactive(false);
+                bars1.interactive(false);
                 lines.useVoronoi(false);
+                lines1.useVoronoi(false);
+                bars.useVoronoi(false);
+                bars1.useVoronoi(false);
             }
         }}
     });
