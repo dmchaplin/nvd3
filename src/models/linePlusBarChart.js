@@ -398,6 +398,7 @@ nv.models.linePlusBarChart = function() {
                     })
                     .forEach(function(series,i) {
                         //var extent = focus.brush.extent() !== null ? (focus.brush.empty() ? focus.xScale().domain() : focus.brush.extent()) : x.domain();
+                        var extent = brush.extent() !== null ? (brush.empty() ? brush.domain() : brush.extent()) : x.domain();
                         var currentValues = series.values;
 
                         /*
